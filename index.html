@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="zh-TW">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <title>中獎率預測器</title>
+    <style>
+      :root {
+        --primary-color: #ffd700;
+        --secondary-color: #ff4500;
+        --bg-gradient: linear-gradient(135deg, #1a1a1a 0%, #333333 100%);
+      }
+
+      body,
+      html {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        font-family: "Microsoft JhengHei", sans-serif;
+        background: var(--bg-gradient);
+        color: white;
+        overflow: hidden;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+
+      #app {
+        text-align: center;
+        width: 90%;
+        max-width: 400px;
+        padding: 30px;
+        background: rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(10px);
+        border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        transition: opacity 0.5s;
+      }
+
+      h1 {
+        font-size: 24px;
+        margin-bottom: 30px;
+        color: var(--primary-color);
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+      }
+
+      .input-group {
+        margin-bottom: 25px;
+      }
+
+      label {
+        display: block;
+        margin-bottom: 10px;
+        font-size: 16px;
+      }
+
+      input {
+        width: 100px;
+        padding: 12px;
+        border-radius: 10px;
+        border: none;
+        background: rgba(255, 255, 255, 0.1);
+        color: white;
+        text-align: center;
+        font-size: 20px;
+        outline: none;
+        border: 2px solid transparent;
+        transition: border 0.3s;
+      }
+
+      input:focus {
+        border-color: var(--primary-color);
+      }
+
+      button {
+        background: linear-gradient(
+          45deg,
+          var(--primary-color),
+          var(--secondary-color)
+        );
+        color: #000;
+        border: none;
+        padding: 12px 30px;
+        font-size: 18px;
+        font-weight: bold;
+        border-radius: 50px;
+        cursor: pointer;
+        transition:
+          transform 0.2s,
+          box-shadow 0.2s;
+        box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3);
+      }
+
+      button:active {
+        transform: scale(0.95);
+      }
+
+      #status {
+        margin-top: 20px;
+        font-size: 14px;
+        color: #aaa;
+        height: 20px;
+      }
+
+      /* 全螢幕覆蓋層 */
+      #overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: black;
+        display: none;
+        z-index: 1000;
+        justify-content: center;
+        align-items: center;
+      }
+
+      #overlay img {
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+      }
+
+      #overlay.whiteout {
+        background: white !important;
+      }
+
+      #overlay.whiteout img {
+        display: none;
+      }
+
+      /* 動畫 */
+      @keyframes pulse {
+        0% {
+          opacity: 0.6;
+        }
+        50% {
+          opacity: 1;
+        }
+        100% {
+          opacity: 0.6;
+        }
+      }
+
+      .loading-text {
+        animation: pulse 1s infinite;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app">
+      <h1>中獎率預測器</h1>
+      <div class="input-group">
+        <label>請輸入您的幸運數字 (1-99)</label>
+        <input type="number" id="luckyNumber" min="1" max="99" value="1" />
+      </div>
+      <button id="predictBtn">開始預測中獎率</button>
+      <div id="status"></div>
+    </div>
+
+    <div id="overlay">
+      <img id="displayImg" src="" alt="顯示內容" />
+    </div>
+
+    <script>
+      const predictBtn = document.getElementById("predictBtn");
+      const luckyInput = document.getElementById("luckyNumber");
+      const statusDiv = document.getElementById("status");
+      const appDiv = document.getElementById("app");
+      const overlay = document.getElementById("overlay");
+      const displayImg = document.getElementById("displayImg");
+
+      const fakeMessages = [
+        "正在連線至衛星數據庫...",
+        "分析歷史數據趨勢...",
+        "計算星象與數字關聯...",
+        "正在排除干擾...",
+        "即將揭曉您的幸運數字！",
+      ];
+
+      predictBtn.addEventListener("click", async () => {
+        const val = parseInt(luckyInput.value);
+        if (isNaN(val) || val < 1 || val > 99) {
+          alert("請輸入 1-99 之間的數字！");
+          return;
+        }
+
+        // 嘗試進入全螢幕 (手機必備)
+        try {
+          if (document.documentElement.requestFullscreen) {
+            await document.documentElement.requestFullscreen();
+          } else if (document.documentElement.webkitRequestFullscreen) {
+            await document.documentElement.webkitRequestFullscreen();
+          }
+        } catch (e) {
+          console.log("全螢幕請求被拒絕，可能需要使用者手動觸發");
+        }
+
+        predictBtn.disabled = true;
+        luckyInput.disabled = true;
+
+        let countdown = 3;
+        const timer = setInterval(() => {
+          if (countdown > 0) {
+            statusDiv.innerText = `${fakeMessages[Math.floor(Math.random() * fakeMessages.length)]} (${countdown}s)`;
+            statusDiv.classList.add("loading-text");
+            countdown--;
+          } else {
+            clearInterval(timer);
+            startFlashSequence();
+          }
+        }, 1000);
+      });
+
+      function startFlashSequence() {
+        // 進入顯示階段
+        overlay.style.display = "flex";
+        appDiv.style.opacity = "0";
+
+        // 1. 顯示中獎率圖片 (1.5秒)
+        displayImg.src = "assets/result.png";
+
+        setTimeout(() => {
+          // 2. 顯示閃光彈 (0.5秒)
+          displayImg.src = "assets/flashbang.png";
+
+          setTimeout(() => {
+            // 3. 全白
+            overlay.classList.add("whiteout");
+
+            setTimeout(() => {
+              // 結束重置
+              overlay.style.display = "none";
+              overlay.classList.remove("whiteout");
+              appDiv.style.opacity = "1";
+              predictBtn.disabled = false;
+              luckyInput.disabled = false;
+              statusDiv.innerText = "連線已重置，您可以重新預測。";
+              statusDiv.classList.remove("loading-text");
+
+              // 結束全螢幕
+              if (document.exitFullscreen) {
+                document.exitFullscreen();
+              } else if (document.webkitExitFullscreen) {
+                document.webkitExitFullscreen();
+              }
+            }, 3000);
+          }, 500);
+        }, 1500);
+      }
+
+      // 點擊事件中斷 (如果使用者想提前結束)
+      overlay.addEventListener("click", () => {
+        // 如果想允許手動中斷，可以在這裡實作
+        // window.location.reload();
+      });
+    </script>
+  </body>
+</html>
